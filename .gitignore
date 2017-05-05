@@ -1,3 +1,7 @@
 tags
 *.swp
 *.out
+*.cmd
+*.ko*
+*.mod*
+*.o
