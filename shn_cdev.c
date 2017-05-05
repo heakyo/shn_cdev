@@ -9,6 +9,8 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	if (rc)
 		goto out;
 
+	pci_set_master(dev);
+
 	printk("probe success\n");
 	return 0;
 
