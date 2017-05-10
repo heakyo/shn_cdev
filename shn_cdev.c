@@ -2,32 +2,61 @@
 
 static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 {
+	int rc = 0;
+
+	struct shn_cdev *cdev;
 	printk("%s\n", __func__);
-	int rc;
+	cdev = kzalloc(sizeof(*cdev), GFP_KERNEL);
+	if (!cdev) {
+		rc = -ENOMEM;
+		goto out;
+	}
+
+	cdev->bar_mask = 1;
+	pci_set_drvdata(dev, cdev);
 
 	rc = pci_enable_device(dev);
 	if (rc)
-		goto out;
+		goto free_out;
 
 	pci_set_master(dev);
+
+	rc = pci_request_selected_regions(dev, cdev->bar_mask, "shn_dev");
+	if (rc)
+		goto disable_dev_out;
+
+	cdev->bar_host_phymem_addr = pci_resource_start(dev, 0);
+	cdev->bar_host_phymem_len = pci_resource_len(dev, 0);
 
 	printk("probe success\n");
 	return 0;
 
+disable_dev_out:
+	pci_disable_device(dev);
+free_out:
+	kfree(cdev);
 out:
 	return rc;
 }
 
 static void shn_cdev_remove(struct pci_dev *dev)
 {
+
+	struct shn_cdev *cdev;
 	printk("%s\n", __func__);
 
+	cdev = pci_get_drvdata(dev);
+
+	pci_release_selected_regions(dev, cdev->bar_mask);
 	pci_disable_device(dev);
+	kfree(cdev);
+
 	printk("remove success\n");
 }
 
 static const struct pci_device_id shn_cdev_ids[] = {
 	{ PCI_DEVICE(PCI_VENDOR_ID_SHANNON, PCI_DEVICE_ID_SHANNON_25A5) },
+	{ PCI_DEVICE(PCI_VENDOR_ID_SHANNON, PCI_DEVICE_ID_SHANNON_05A5) },
 	{0, }
 };
 

@@ -9,10 +9,17 @@
 /* define */
 #define PCI_VENDOR_ID_SHANNON 	0x1CB0
 #define PCI_DEVICE_ID_SHANNON_25A5 0x25a5
+#define PCI_DEVICE_ID_SHANNON_05A5 0x05a5
 
 /* struct */
 struct shn_cdev {
 	struct cdev cdev;
+	char name[32];
+	int bar_mask;
+
+	resource_size_t bar_host_phymem_addr;
+	resource_size_t bar_host_phymem_len;
+
 };
 
 #endif
