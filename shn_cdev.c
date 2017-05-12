@@ -59,6 +59,7 @@ static const struct pci_device_id shn_cdev_ids[] = {
 	{ PCI_DEVICE(PCI_VENDOR_ID_SHANNON, PCI_DEVICE_ID_SHANNON_05A5) },
 	{0, }
 };
+MODULE_DEVICE_TABLE(pci, shn_cdev_ids);
 
 static struct pci_driver shn_cdev_driver = {
 	.name = "shn_cdev",
