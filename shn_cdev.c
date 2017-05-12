@@ -19,6 +19,7 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	if (rc)
 		goto free_out;
 
+	/* use DMA */
 	pci_set_master(dev);
 
 	rc = pci_request_selected_regions(dev, cdev->bar_mask, "shn_dev");
@@ -28,9 +29,17 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	cdev->bar_host_phymem_addr = pci_resource_start(dev, 0);
 	cdev->bar_host_phymem_len = pci_resource_len(dev, 0);
 
+	rc = pci_set_dma_mask(dev,DMA_BIT_MASK(32));
+	if (rc) {
+		printk("Set dma mask error\n");
+		goto release_pci_regions_out;
+	}
+
 	printk("probe success\n");
 	return 0;
 
+release_pci_regions_out:
+	pci_release_selected_regions(dev, cdev->bar_mask);
 disable_dev_out:
 	pci_disable_device(dev);
 free_out:
