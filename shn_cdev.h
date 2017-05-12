@@ -11,6 +11,8 @@
 #define PCI_DEVICE_ID_SHANNON_25A5 0x25a5
 #define PCI_DEVICE_ID_SHANNON_05A5 0x05a5
 
+#define SHNDEV_NAME "shn_cdev"
+
 /* struct */
 struct shn_cdev {
 	struct cdev cdev;

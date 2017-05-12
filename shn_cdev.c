@@ -12,6 +12,7 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 		goto out;
 	}
 
+	sprintf(cdev->name, "%s", SHNDEV_NAME);
 	cdev->bar_mask = 1;
 	pci_set_drvdata(dev, cdev);
 
@@ -22,7 +23,7 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	/* use DMA */
 	pci_set_master(dev);
 
-	rc = pci_request_selected_regions(dev, cdev->bar_mask, "shn_dev");
+	rc = pci_request_selected_regions(dev, cdev->bar_mask, SHNDEV_NAME);
 	if (rc)
 		goto disable_dev_out;
 
@@ -71,7 +72,7 @@ static const struct pci_device_id shn_cdev_ids[] = {
 MODULE_DEVICE_TABLE(pci, shn_cdev_ids);
 
 static struct pci_driver shn_cdev_driver = {
-	.name = "shn_cdev",
+	.name = SHNDEV_NAME,
 	.id_table = shn_cdev_ids,
 	.probe = shn_cdev_probe,
 	.remove = shn_cdev_remove,
