@@ -5,6 +5,7 @@
 #include<linux/module.h>
 #include<linux/pci.h>
 #include<linux/cdev.h>
+#include<linux/interrupt.h>
 
 /* define */
 #define PCI_VENDOR_ID_SHANNON 	0x1CB0

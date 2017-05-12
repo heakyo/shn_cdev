@@ -1,5 +1,11 @@
 #include"shn_cdev.h"
 
+static irqreturn_t shn_cdev_irq(int irq, void *id)
+{
+
+	return IRQ_HANDLED;
+}
+
 static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 {
 	int rc = 0;
@@ -36,6 +42,13 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 		goto release_pci_regions_out;
 	}
 
+	rc = request_irq(dev->irq, shn_cdev_irq, IRQF_SHARED, cdev->name, cdev);
+	if (rc) {
+		printk("request irq error\n");
+		goto release_pci_regions_out;
+	}
+	printk("irq: %d\n", dev->irq);
+
 	printk("probe success\n");
 	return 0;
 
@@ -57,6 +70,7 @@ static void shn_cdev_remove(struct pci_dev *dev)
 
 	cdev = pci_get_drvdata(dev);
 
+	free_irq(dev->irq, cdev);
 	pci_release_selected_regions(dev, cdev->bar_mask);
 	pci_disable_device(dev);
 	kfree(cdev);
