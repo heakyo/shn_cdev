@@ -7,11 +7,32 @@ void shn_do_tasklet(unsigned long data)
 
 static irqreturn_t shn_cdev_irq(int irq, void *id)
 {
-	struct shn_cdev *cdev = (struct shn_cdev *)id;
+	//struct shn_cdev *cdev = (struct shn_cdev *)id;
 
 	//tasklet_schedule(&cdev->tasklet);
 
 	return IRQ_HANDLED;
+}
+
+int register_shn_cdev(struct shn_cdev *cdev)
+{
+	int rc = 0;
+
+	rc = alloc_chrdev_region(&cdev->devno, 0, 1, cdev->name);
+	if (rc) {
+		printk("get dev number error\n");
+		goto out;
+	}
+
+	return 0;
+
+out:
+	return rc;
+}
+
+static void unregister_shn_cdev(struct shn_cdev *cdev)
+{
+	unregister_chrdev_region(cdev->devno, 1);
 }
 
 static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
@@ -58,9 +79,18 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	}
 	printk("irq: %d\n", dev->irq);
 
+	/* register shn cdev */
+	rc = register_shn_cdev(cdev);
+	if (rc) {
+		printk("register shn cdev error\n");
+		goto free_irq_out;
+	}
+
 	printk("probe success\n");
 	return 0;
 
+free_irq_out:
+	free_irq(dev->irq, cdev);
 release_pci_regions_out:
 	pci_release_selected_regions(dev, cdev->bar_mask);
 disable_dev_out:
@@ -79,6 +109,7 @@ static void shn_cdev_remove(struct pci_dev *dev)
 
 	cdev = pci_get_drvdata(dev);
 
+	unregister_shn_cdev(cdev);
 	free_irq(dev->irq, cdev);
 	pci_release_selected_regions(dev, cdev->bar_mask);
 	pci_disable_device(dev);
