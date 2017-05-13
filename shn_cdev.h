@@ -23,7 +23,11 @@ struct shn_cdev {
 	resource_size_t bar_host_phymem_addr;
 	resource_size_t bar_host_phymem_len;
 
+	struct tasklet_struct tasklet;
+
 };
+
+void shn_do_tasklet(unsigned long data);
 
 #endif
 

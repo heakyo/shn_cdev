@@ -1,7 +1,15 @@
 #include"shn_cdev.h"
 
+void shn_do_tasklet(unsigned long data)
+{
+	printk("%s\n", __func__);
+}
+
 static irqreturn_t shn_cdev_irq(int irq, void *id)
 {
+	struct shn_cdev *cdev = (struct shn_cdev *)id;
+
+	//tasklet_schedule(&cdev->tasklet);
 
 	return IRQ_HANDLED;
 }
@@ -42,7 +50,8 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 		goto release_pci_regions_out;
 	}
 
-	rc = request_irq(dev->irq, shn_cdev_irq, IRQF_SHARED, cdev->name, cdev);
+	tasklet_init(&cdev->tasklet, shn_do_tasklet, (unsigned long)cdev);
+	rc = request_irq(dev->irq, shn_cdev_irq, IRQF_SHARED, cdev->name, (void *)cdev);
 	if (rc) {
 		printk("request irq error\n");
 		goto release_pci_regions_out;
