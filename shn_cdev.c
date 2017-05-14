@@ -1,5 +1,42 @@
 #include"shn_cdev.h"
 
+static int shn_open(struct inode *inodep, struct file *filp)
+{
+	struct shn_cdev *cdev;
+
+	cdev = container_of(inodep->i_cdev, struct shn_cdev, cdev);
+	filp->private_data = cdev;
+
+	return 0;
+}
+
+static ssize_t shn_write(struct file *filp, const char __user *buf, size_t count, loff_t *ppos)
+{
+	int ret = count;
+
+	return ret;
+}
+
+static ssize_t shn_read(struct file *filp, char __user *buf, size_t count, loff_t *ppos)
+{
+	int ret = count;
+
+	return ret;
+}
+
+static int shn_ioctl(struct inode *inodep, struct file *filep, unsigned int cmd, unsigned long arg)
+{
+	return 0;
+}
+
+static const struct file_operations shn_cdev_fops = {
+	.owner = THIS_MODULE,
+	.open = shn_open,
+	.write = shn_write,
+	.read = shn_read,
+	.ioctl = shn_ioctl,
+};
+
 void shn_do_tasklet(unsigned long data)
 {
 	printk("%s\n", __func__);
@@ -24,8 +61,19 @@ int register_shn_cdev(struct shn_cdev *cdev)
 		goto out;
 	}
 
+	cdev_init(&cdev->cdev, &shn_cdev_fops);
+	cdev->cdev.owner = THIS_MODULE;
+
+	rc = cdev_add(&cdev->cdev, cdev->devno, 1);
+	if (rc) {
+		printk("add cdev to system  error\n");
+		goto unregister_cdev_out;
+	}
+
 	return 0;
 
+unregister_cdev_out:
+	unregister_chrdev_region(cdev->devno, 1);
 out:
 	return rc;
 }
