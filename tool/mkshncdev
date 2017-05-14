@@ -1,0 +1,3 @@
+#! /bin/bash
+
+mknod /dev/shn_cdev c $1 0
