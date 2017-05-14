@@ -5,3 +5,4 @@ tags
 *.ko*
 *.mod*
 *.o
+usr_test
