@@ -21,6 +21,21 @@ static ssize_t shn_read(struct file *filp, char __user *buf, size_t count, loff_
 {
 	int ret = count;
 
+	const char s[10] = "hello\n";
+
+	if (*ppos >= 6)
+		return 0;
+
+
+	if (copy_to_user(buf, s, 6)) {
+		ret = -EFAULT;
+	} else {
+		*ppos += 6;
+		ret = count;
+
+		//printk("read %ld bytes\n", count);
+	}
+
 	return ret;
 }
 

@@ -23,15 +23,21 @@
 #include<errno.h>
 
 #define FPATH "/dev/shn_cdev"
+#define BUF_LEN 32
 
 int main(int argc, char *argv[])
 {
 	int fd;
+	char *rd_buf[BUF_LEN];
 
 	fd = open(FPATH, O_RDWR);
 	if (fd == -1) {
 		perror("open file error");
 		return errno;
+	}
+
+	if (read(fd, rd_buf, 6) < 0) {
+		perror("read file error");
 	}
 
 	close(fd);
