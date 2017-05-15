@@ -1,3 +1,21 @@
 #! /bin/bash
 
-mknod /dev/shn_cdev c $1 0
+cdev_node="/dev/shn_cdev"
+cdev_major=$1
+
+if [ $# -ne 1 ]; then
+	echo "usage:"
+	echo -e "\t mkshnnode cdev_major"
+	echo "e.g:"
+	echo -e "\t mkshnode 245"
+
+	exit -1
+fi
+
+if [ -c $cdev_node ]; then
+	echo "remove $cdev_node"
+	rm -rf $cdev_node
+fi
+
+echo "mknod $cdev_node c $cdev_major 0"
+mknod /dev/shn_cdev c $cdev_major 0
