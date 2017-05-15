@@ -25,6 +25,8 @@ struct shn_cdev {
 	resource_size_t bar_host_phymem_addr;
 	resource_size_t bar_host_phymem_len;
 
+	unsigned int __iomem *mmio;
+
 	struct tasklet_struct tasklet;
 
 };

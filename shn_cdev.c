@@ -127,18 +127,23 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 
 	cdev->bar_host_phymem_addr = pci_resource_start(dev, 0);
 	cdev->bar_host_phymem_len = pci_resource_len(dev, 0);
+	cdev->mmio = ioremap(cdev->bar_host_phymem_addr, cdev->bar_host_phymem_len);
+	if (!cdev->mmio) {
+		printk("ioremap phyaddr %p error\n", (void *)cdev->bar_host_phymem_addr);
+		goto release_pci_regions_out;
+	}
 
 	rc = pci_set_dma_mask(dev,DMA_BIT_MASK(32));
 	if (rc) {
 		printk("Set dma mask error\n");
-		goto release_pci_regions_out;
+		goto iounmap_out;
 	}
 
 	tasklet_init(&cdev->tasklet, shn_do_tasklet, (unsigned long)cdev);
 	rc = request_irq(dev->irq, shn_cdev_irq, IRQF_SHARED, cdev->name, (void *)cdev);
 	if (rc) {
 		printk("request irq error\n");
-		goto release_pci_regions_out;
+		goto iounmap_out;
 	}
 	printk("irq: %d\n", dev->irq);
 
@@ -154,6 +159,8 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 
 free_irq_out:
 	free_irq(dev->irq, cdev);
+iounmap_out:
+	iounmap(cdev->mmio);
 release_pci_regions_out:
 	pci_release_selected_regions(dev, cdev->bar_mask);
 disable_dev_out:
@@ -174,6 +181,7 @@ static void shn_cdev_remove(struct pci_dev *dev)
 
 	unregister_shn_cdev(cdev);
 	free_irq(dev->irq, cdev);
+	iounmap(cdev->mmio);
 	pci_release_selected_regions(dev, cdev->bar_mask);
 	pci_disable_device(dev);
 	kfree(cdev);
