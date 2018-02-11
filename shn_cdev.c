@@ -111,7 +111,7 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	}
 
 	sprintf(cdev->name, "%s", SHNDEV_NAME);
-	cdev->bar_mask = 1;
+	cdev->bar_mark = 1; // only BAR 0
 	pci_set_drvdata(dev, cdev);
 
 	rc = pci_enable_device(dev);
@@ -121,7 +121,7 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	/* use DMA */
 	pci_set_master(dev);
 
-	rc = pci_request_selected_regions(dev, cdev->bar_mask, SHNDEV_NAME);
+	rc = pci_request_selected_regions(dev, cdev->bar_mark, SHNDEV_NAME);
 	if (rc)
 		goto disable_dev_out;
 
@@ -162,7 +162,7 @@ free_irq_out:
 iounmap_out:
 	iounmap(cdev->mmio);
 release_pci_regions_out:
-	pci_release_selected_regions(dev, cdev->bar_mask);
+	pci_release_selected_regions(dev, cdev->bar_mark);
 disable_dev_out:
 	pci_disable_device(dev);
 free_out:
@@ -182,7 +182,7 @@ static void shn_cdev_remove(struct pci_dev *dev)
 	unregister_shn_cdev(cdev);
 	free_irq(dev->irq, cdev);
 	iounmap(cdev->mmio);
-	pci_release_selected_regions(dev, cdev->bar_mask);
+	pci_release_selected_regions(dev, cdev->bar_mark);
 	pci_disable_device(dev);
 	kfree(cdev);
 

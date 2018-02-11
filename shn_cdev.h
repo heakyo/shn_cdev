@@ -20,7 +20,7 @@ struct shn_cdev {
 	struct cdev cdev;
 	dev_t devno;
 	char name[32];
-	int bar_mask;
+	int bar_mark;
 
 	resource_size_t bar_host_phymem_addr;
 	resource_size_t bar_host_phymem_len;
