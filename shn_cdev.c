@@ -75,11 +75,12 @@ int register_shn_cdev(struct shn_cdev *cdev)
 		printk("get dev number error\n");
 		goto out;
 	}
+	printk("shn cdev id: %x\n", MKDEV(MAJOR(cdev->devno), 0));
 
 	cdev_init(&cdev->cdev, &shn_cdev_fops);
 	cdev->cdev.owner = THIS_MODULE;
 
-	rc = cdev_add(&cdev->cdev, cdev->devno, 1);
+	rc = cdev_add(&cdev->cdev, MKDEV(MAJOR(cdev->devno), 0), 1);
 	if (rc) {
 		printk("add cdev to system  error\n");
 		goto unregister_cdev_out;
@@ -133,7 +134,7 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 		goto release_pci_regions_out;
 	}
 
-	rc = pci_set_dma_mask(dev,DMA_BIT_MASK(32));
+	rc = pci_set_dma_mask(dev, DMA_BIT_MASK(32));
 	if (rc) {
 		printk("Set dma mask error\n");
 		goto iounmap_out;

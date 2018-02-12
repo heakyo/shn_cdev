@@ -1,5 +1,7 @@
 #! /bin/bash
 
+# test in the root mode
+
 cdev_node="/dev/shn_cdev"
 cdev_major=$1
 
