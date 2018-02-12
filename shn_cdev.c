@@ -143,7 +143,7 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 
 	struct shn_cdev *cdev;
 
-	printk("%s PAGE_SIZE=%ld dma_addr_t=%ld\n",
+	printk("%s PAGE_SIZE = %ld dma_addr_t = %ld\n",
 		(check_endian() ? "Big-Endian" : "Little-Endian"), PAGE_SIZE, sizeof(dma_addr_t));
 
 	cdev = kzalloc(sizeof(*cdev), GFP_KERNEL);
@@ -176,11 +176,20 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 
 	cdev->bar_host_phymem_addr = pci_resource_start(dev, 0);
 	cdev->bar_host_phymem_len = pci_resource_len(dev, 0);
+	if (!cdev->bar_host_phymem_addr || !cdev->bar_host_phymem_len) {
+		printk("Hardware BAR memory failed\n");
+		rc = -EIO;
+		goto fail_map;
+	}
+
 	cdev->mmio = ioremap(cdev->bar_host_phymem_addr, cdev->bar_host_phymem_len);
 	if (!cdev->mmio) {
 		printk("ioremap phyaddr %p error\n", (void *)cdev->bar_host_phymem_addr);
+		rc = -ENOMEM;
 		goto fail_map;
 	}
+	printk("%s BAR0 Host: phymem = 0x%llx, virmem: 0x%p, len = 0x%llx\n",
+		cdev->name, cdev->bar_host_phymem_addr, cdev->mmio, cdev->bar_host_phymem_len);
 
 	rc = pci_set_dma_mask(dev, DMA_BIT_MASK(32));
 	if (rc) {
