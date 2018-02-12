@@ -120,12 +120,27 @@ static void unregister_shn_cdev(struct shn_cdev *cdev)
 	unregister_chrdev_region(cdev->devno, 1);
 }
 
+/* 0: little endian  1: big endian */
+static int check_endian(void)
+{
+#define LITTLE_ENDIAN 	0
+#define BIG_ENDIAN 	1
+
+	int x = 1;
+	char *p = (char *)&x;
+
+	return (*p ? LITTLE_ENDIAN : BIG_ENDIAN);
+}
+
 static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 {
 	int rc = 0;
 
 	struct shn_cdev *cdev;
-	printk("%s\n", __func__);
+
+	printk("%s PAGE_SIZE=%ld dma_addr_t=%ld\n",
+		(check_endian() ? "Big-Endian" : "Little-Endian"), PAGE_SIZE, sizeof(dma_addr_t));
+
 	cdev = kzalloc(sizeof(*cdev), GFP_KERNEL);
 	if (!cdev) {
 		rc = -ENOMEM;
@@ -227,13 +242,11 @@ static struct pci_driver shn_cdev_driver = {
 
 static int shn_init(void)
 {
-	printk("%s\n", __func__);
 	return pci_register_driver(&shn_cdev_driver);
 }
 
 static void shn_exit(void)
 {
-	printk("%s\n", __func__);
 	pci_unregister_driver(&shn_cdev_driver);
 }
 
