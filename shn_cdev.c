@@ -153,8 +153,9 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	memset(cdev->done_phylun_bitmap, 0xFF, sizeof(cdev->done_phylun_bitmap));
 
 	sprintf(cdev->name, "%s", SHNDEV_NAME);
-	cdev->bar_mark = 1; // only BAR 0
-	pci_set_drvdata(dev, cdev);
+	cdev->bar_mark = BAR0; // only BAR 0
+	cdev->pdev = dev;
+	pci_set_drvdata(dev, cdev); // to get shn_cdev in other functions
 
 	rc = pci_enable_device(dev);
 	if (rc)
