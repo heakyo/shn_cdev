@@ -15,6 +15,10 @@
 
 #define SHNDEV_NAME "shn_cdev"
 
+#define MAX_LUNS 512
+#define MAX_LUNS_NLONG ((MAX_LUNS + 8 * sizeof(unsigned long) - 1) / (8 * sizeof(unsigned long)))
+#define MAX_LUNS_NBYTE (MAX_LUNS_NLONG * sizeof(unsigned long))
+
 /* struct */
 struct shn_cdev {
 	struct cdev cdev;
@@ -31,6 +35,8 @@ struct shn_cdev {
 
 	struct tasklet_struct tasklet;
 
+	unsigned long phylun_bitmap[MAX_LUNS_NLONG];
+	unsigned long done_phylun_bitmap[MAX_LUNS_NLONG];
 };
 
 void shn_do_tasklet(unsigned long data);

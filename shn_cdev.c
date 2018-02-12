@@ -148,6 +148,10 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 		goto out;
 	}
 
+	// default all luns exist
+	memset(cdev->phylun_bitmap, 0xFF, sizeof(cdev->phylun_bitmap));
+	memset(cdev->done_phylun_bitmap, 0xFF, sizeof(cdev->done_phylun_bitmap));
+
 	sprintf(cdev->name, "%s", SHNDEV_NAME);
 	cdev->bar_mark = 1; // only BAR 0
 	pci_set_drvdata(dev, cdev);
