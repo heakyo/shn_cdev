@@ -23,15 +23,23 @@
 #define BAR0 0x01
 #define BAR1 0x02
 
+// REG OFFSET
+#define REG_STATIC_SYS_INFO_OFT 	0x0
+
 /* struct */
 struct shn_cdev {
 	struct cdev cdev;
 	struct device *device;
 	struct class *class;
 	struct pci_dev *pdev;
+
 	dev_t devno;
 	char name[32];
 	int bar_mark;
+
+	int hw_nchannel;
+	int hw_nthread;
+	int hw_nlun;
 
 	resource_size_t bar_host_phymem_addr;
 	resource_size_t bar_host_phymem_len;

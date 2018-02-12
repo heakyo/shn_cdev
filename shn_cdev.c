@@ -137,6 +137,21 @@ static void set_shn_cdev_name(struct shn_cdev *cdev)
 	sprintf(cdev->name, "%s", SHNDEV_NAME);
 }
 
+static int get_hw_nchannel(struct shn_cdev *cdev)
+{
+	return (ioread32(cdev->mmio + REG_STATIC_SYS_INFO_OFT)>>16 & 0xFF);
+}
+
+static int get_hw_nthread(struct shn_cdev *cdev)
+{
+	return (ioread32(cdev->mmio + REG_STATIC_SYS_INFO_OFT)>>24 & 0x0F);
+}
+
+static int get_hw_nlun(struct shn_cdev *cdev)
+{
+	return ((ioread32(cdev->mmio + REG_STATIC_SYS_INFO_OFT)>>12 & 0x0F) + 1);
+}
+
 static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 {
 	int rc = 0;
@@ -190,6 +205,15 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	}
 	printk("%s BAR0 Host: phymem = 0x%llx, virmem: 0x%p, len = 0x%llx\n",
 		cdev->name, cdev->bar_host_phymem_addr, cdev->mmio, cdev->bar_host_phymem_len);
+
+	cdev->hw_nchannel = get_hw_nchannel(cdev);
+	cdev->hw_nthread = get_hw_nthread(cdev);
+	cdev->hw_nlun = get_hw_nlun(cdev);
+	printk("hw nchannel:%d hw nthread:%d  hw nlun:%d\n", cdev->hw_nchannel, cdev->hw_nthread, cdev->hw_nlun);
+	if (0x0 == cdev->hw_nchannel || 0xFF == cdev->hw_nchannel || 0x0 == cdev->hw_nthread || 0x0 == cdev->hw_nlun) {
+		rc = -EIO;
+		goto fail_map;
+	}
 
 	rc = pci_set_dma_mask(dev, DMA_BIT_MASK(32));
 	if (rc) {
