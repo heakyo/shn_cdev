@@ -142,7 +142,8 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 		(check_endian() ? "Big-Endian" : "Little-Endian"), PAGE_SIZE, sizeof(dma_addr_t));
 
 	cdev = kzalloc(sizeof(*cdev), GFP_KERNEL);
-	if (!cdev) {
+	if (NULL == cdev) {
+		printk("alloc shn_cdev failed\n");
 		rc = -ENOMEM;
 		goto out;
 	}
