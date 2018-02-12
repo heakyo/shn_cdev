@@ -132,6 +132,11 @@ static int check_endian(void)
 	return (*p ? LITTLE_ENDIAN : BIG_ENDIAN);
 }
 
+static void set_shn_cdev_name(struct shn_cdev *cdev)
+{
+	sprintf(cdev->name, "%s", SHNDEV_NAME);
+}
+
 static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 {
 	int rc = 0;
@@ -152,10 +157,11 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	memset(cdev->phylun_bitmap, 0xFF, sizeof(cdev->phylun_bitmap));
 	memset(cdev->done_phylun_bitmap, 0xFF, sizeof(cdev->done_phylun_bitmap));
 
-	sprintf(cdev->name, "%s", SHNDEV_NAME);
 	cdev->bar_mark = BAR0; // only BAR 0
 	cdev->pdev = dev;
 	pci_set_drvdata(dev, cdev); // to get shn_cdev in other functions
+
+	set_shn_cdev_name(cdev);
 
 	rc = pci_enable_device(dev);
 	if (rc)
