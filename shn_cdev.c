@@ -75,20 +75,38 @@ int register_shn_cdev(struct shn_cdev *cdev)
 		printk("get dev number error\n");
 		goto out;
 	}
-	printk("shn cdev id: %x\n", MKDEV(MAJOR(cdev->devno), 0));
+	printk("shn cdev devno: %x\n", cdev->devno);
 
 	cdev_init(&cdev->cdev, &shn_cdev_fops);
 	cdev->cdev.owner = THIS_MODULE;
 
-	rc = cdev_add(&cdev->cdev, MKDEV(MAJOR(cdev->devno), 0), 1);
+	rc = cdev_add(&cdev->cdev, cdev->devno, 1);
 	if (rc) {
 		printk("add cdev to system  error\n");
-		goto unregister_cdev_out;
+		goto fail_cdev_add;
+	}
+
+	cdev->class = class_create(THIS_MODULE, cdev->name);
+	if (IS_ERR(cdev->class)) {
+		rc = PTR_ERR(cdev->class);
+		printk("create class error\n");
+		goto fail_class_create;
+	}
+
+	cdev->device = device_create(cdev->class, NULL, cdev->devno, NULL, cdev->name);
+	if (IS_ERR(cdev->device)) {
+		rc = PTR_ERR(cdev->device);
+		printk("create device error\n");
+		goto fail_dev_create;
 	}
 
 	return 0;
 
-unregister_cdev_out:
+fail_dev_create:
+	class_destroy(cdev->class);
+fail_class_create:
+	cdev_del(&cdev->cdev);
+fail_cdev_add:
 	unregister_chrdev_region(cdev->devno, 1);
 out:
 	return rc;
@@ -96,6 +114,9 @@ out:
 
 static void unregister_shn_cdev(struct shn_cdev *cdev)
 {
+	device_destroy(cdev->class, cdev->devno);
+	class_destroy(cdev->class);
+	cdev_del(&cdev->cdev);
 	unregister_chrdev_region(cdev->devno, 1);
 }
 
@@ -117,34 +138,34 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 
 	rc = pci_enable_device(dev);
 	if (rc)
-		goto free_out;
+		goto fail_en_pci_dev;
 
 	/* use DMA */
 	pci_set_master(dev);
 
 	rc = pci_request_selected_regions(dev, cdev->bar_mark, SHNDEV_NAME);
 	if (rc)
-		goto disable_dev_out;
+		goto fail_req_regions;
 
 	cdev->bar_host_phymem_addr = pci_resource_start(dev, 0);
 	cdev->bar_host_phymem_len = pci_resource_len(dev, 0);
 	cdev->mmio = ioremap(cdev->bar_host_phymem_addr, cdev->bar_host_phymem_len);
 	if (!cdev->mmio) {
 		printk("ioremap phyaddr %p error\n", (void *)cdev->bar_host_phymem_addr);
-		goto release_pci_regions_out;
+		goto fail_map;
 	}
 
 	rc = pci_set_dma_mask(dev, DMA_BIT_MASK(32));
 	if (rc) {
 		printk("Set dma mask error\n");
-		goto iounmap_out;
+		goto fail_set_dma_mask;
 	}
 
 	tasklet_init(&cdev->tasklet, shn_do_tasklet, (unsigned long)cdev);
 	rc = request_irq(dev->irq, shn_cdev_irq, IRQF_SHARED, cdev->name, (void *)cdev);
 	if (rc) {
 		printk("request irq error\n");
-		goto iounmap_out;
+		goto fail_set_dma_mask;
 	}
 	printk("irq: %d\n", dev->irq);
 
@@ -152,21 +173,21 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	rc = register_shn_cdev(cdev);
 	if (rc) {
 		printk("register shn cdev error\n");
-		goto free_irq_out;
+		goto fail_reg_shn;
 	}
 
 	printk("probe success\n");
 	return 0;
 
-free_irq_out:
+fail_reg_shn:
 	free_irq(dev->irq, cdev);
-iounmap_out:
+fail_set_dma_mask:
 	iounmap(cdev->mmio);
-release_pci_regions_out:
+fail_map:
 	pci_release_selected_regions(dev, cdev->bar_mark);
-disable_dev_out:
+fail_req_regions:
 	pci_disable_device(dev);
-free_out:
+fail_en_pci_dev:
 	kfree(cdev);
 out:
 	return rc;

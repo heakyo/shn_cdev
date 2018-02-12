@@ -18,6 +18,8 @@
 /* struct */
 struct shn_cdev {
 	struct cdev cdev;
+	struct device *device;
+	struct class *class;
 	dev_t devno;
 	char name[32];
 	int bar_mark;
