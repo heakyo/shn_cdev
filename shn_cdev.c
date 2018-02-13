@@ -214,6 +214,8 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 		rc = -EIO;
 		goto fail_map;
 	}
+	cdev->hw_threads = cdev->hw_nchannel * cdev->hw_nthread;
+	cdev->hw_luns = cdev->hw_threads * cdev->hw_nlun;
 
 	rc = pci_set_dma_mask(dev, DMA_BIT_MASK(32));
 	if (rc) {

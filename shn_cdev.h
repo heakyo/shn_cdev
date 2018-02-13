@@ -40,6 +40,8 @@ struct shn_cdev {
 	int hw_nchannel;
 	int hw_nthread;
 	int hw_nlun;
+	int hw_threads;
+	int hw_luns;
 
 	resource_size_t bar_host_phymem_addr;
 	resource_size_t bar_host_phymem_len;
