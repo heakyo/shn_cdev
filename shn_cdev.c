@@ -139,17 +139,29 @@ static void set_shn_cdev_name(struct shn_cdev *cdev)
 
 static int get_hw_nchannel(struct shn_cdev *cdev)
 {
-	return (ioread32(cdev->mmio + REG_STATIC_SYS_INFO_OFT)>>16 & 0xFF);
+	return (ioread32(BAR0_REG_STATIC_SYS_INFO)>>16 & 0xFF);
 }
 
 static int get_hw_nthread(struct shn_cdev *cdev)
 {
-	return (ioread32(cdev->mmio + REG_STATIC_SYS_INFO_OFT)>>24 & 0x0F);
+	return (ioread32(BAR0_REG_STATIC_SYS_INFO)>>24 & 0x0F);
 }
 
 static int get_hw_nlun(struct shn_cdev *cdev)
 {
-	return ((ioread32(cdev->mmio + REG_STATIC_SYS_INFO_OFT)>>12 & 0x0F) + 1);
+	return ((ioread32(BAR0_REG_STATIC_SYS_INFO)>>12 & 0x0F) + 1);
+}
+
+static int get_hw_dma_addr_bits(struct shn_cdev *cdev)
+{
+	return ((ioread32(BAR0_REG_GLBL_CFG)>>25 & 0x01) + 1) * 32;
+}
+
+static void set_hw_dma_addr_bits(struct shn_cdev *cdev, int dma_addr_bits)
+{
+	char dma_bit = dma_addr_bits / 32 - 1;
+
+	iowrite32((ioread32(BAR0_REG_GLBL_CFG) & (~0x02000000)) | (dma_bit<<25), BAR0_REG_GLBL_CFG);
 }
 
 static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
@@ -158,8 +170,8 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 
 	struct shn_cdev *cdev;
 
-	printk("%s PAGE_SIZE = %ld dma_addr_t = %ld\n",
-		(check_endian() ? "Big-Endian" : "Little-Endian"), PAGE_SIZE, sizeof(dma_addr_t));
+	printk("%s PAGE SIZE: %ld DMA Addr Bits: %d\n",
+		(check_endian() ? "Big-Endian" : "Little-Endian"), PAGE_SIZE, DMA_ADDR_BITS);
 
 	cdev = kzalloc(sizeof(*cdev), GFP_KERNEL);
 	if (NULL == cdev) {
@@ -192,14 +204,14 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	cdev->bar_host_phymem_addr = pci_resource_start(dev, 0);
 	cdev->bar_host_phymem_len = pci_resource_len(dev, 0);
 	if (!cdev->bar_host_phymem_addr || !cdev->bar_host_phymem_len) {
-		printk("Hardware BAR memory failed\n");
+		printk("hardware BAR memory failed\n");
 		rc = -EIO;
 		goto fail_map;
 	}
 
 	cdev->mmio = ioremap(cdev->bar_host_phymem_addr, cdev->bar_host_phymem_len);
 	if (!cdev->mmio) {
-		printk("ioremap phyaddr %p error\n", (void *)cdev->bar_host_phymem_addr);
+		printk("ioremap phyaddr %p failed\n", (void *)cdev->bar_host_phymem_addr);
 		rc = -ENOMEM;
 		goto fail_map;
 	}
@@ -217,9 +229,17 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	cdev->hw_threads = cdev->hw_nchannel * cdev->hw_nthread;
 	cdev->hw_luns = cdev->hw_threads * cdev->hw_nlun;
 
-	rc = pci_set_dma_mask(dev, DMA_BIT_MASK(32));
+	// set DMA addr
+	set_hw_dma_addr_bits(cdev, DMA_ADDR_BITS);
+	if (DMA_ADDR_BITS != get_hw_dma_addr_bits(cdev)) {
+		printk("set hw DMA failed\n");
+		rc = -EIO;
+		goto fail_map;
+	}
+
+	rc = pci_set_dma_mask(dev, DMA_BIT_MASK(DMA_ADDR_BITS));
 	if (rc) {
-		printk("Set dma mask error\n");
+		printk("set dma mask failed\n");
 		goto fail_set_dma_mask;
 	}
 

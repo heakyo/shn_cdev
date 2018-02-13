@@ -9,6 +9,8 @@
 #include<linux/fs.h>
 
 /* define */
+//#define CONFIG_SHANNON_64BIT_QUEUE_DMA
+
 #define PCI_VENDOR_ID_SHANNON 	0x1CB0
 #define PCI_DEVICE_ID_SHANNON_25A5 0x25A5
 #define PCI_DEVICE_ID_SHANNON_05A5 0x05A5
@@ -23,8 +25,17 @@
 #define BAR0 0x01
 #define BAR1 0x02
 
-// REG OFFSET
-#define REG_STATIC_SYS_INFO_OFT 	0x0
+// BRA0 REG OFFSET
+#define BAR0_REG_BASE_ADDR 		(cdev->mmio)
+#define BAR0_REG_STATIC_SYS_INFO 	(BAR0_REG_BASE_ADDR + 0x0)
+#define BAR0_REG_GLBL_CFG 		(BAR0_REG_BASE_ADDR + 0xC0)
+
+// DMA addr
+#ifdef CONFIG_SHANNON_64BIT_QUEUE_DMA
+	#define DMA_ADDR_BITS 	(sizeof(dma_addr_t) * 8)
+#else
+	#define DMA_ADDR_BITS 	32
+#endif
 
 /* struct */
 struct shn_cdev {
