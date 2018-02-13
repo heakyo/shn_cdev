@@ -164,6 +164,49 @@ static void set_hw_dma_addr_bits(struct shn_cdev *cdev, int dma_addr_bits)
 	iowrite32((ioread32(BAR0_REG_GLBL_CFG) & (~0x02000000)) | (dma_bit<<25), BAR0_REG_GLBL_CFG);
 }
 
+static void free_qmem(struct shn_cdev *cdev)
+{
+	int thr = 0;
+
+	for (thr = 0; thr < cdev->hw_threads; thr++) {
+		if (cdev->qmem[thr].kernel_addr == NULL)
+			break;
+		dma_free_coherent(&cdev->pdev->dev, QUEUE_MEM_SIZE, cdev->qmem[thr].kernel_addr, cdev->qmem[thr].dma_addr);
+	}
+
+	kfree(cdev->qmem);
+}
+
+static int alloc_qmem(struct shn_cdev *cdev)
+{
+	int thr = 0;
+	int rc = 0;
+
+	cdev->qmem = (struct shn_qmem *)kzalloc(sizeof(cdev->qmem), GFP_KERNEL);
+	if (NULL == cdev->qmem) {
+		printk("alloc queue memory failed\n");
+		rc = -ENOMEM;
+		goto out;
+	}
+
+	for (thr = 0; thr < cdev->hw_threads; thr++) {
+		cdev->qmem[thr].kernel_addr = dma_alloc_coherent(&cdev->pdev->dev, QUEUE_MEM_SIZE, &cdev->qmem[thr].dma_addr, GFP_KERNEL);
+		if (NULL == cdev->qmem[thr].kernel_addr) {
+			printk("dma alloc coherent failed\n");
+			rc = -ENOMEM;
+			goto fail_alloc_dma_addr;
+		}
+		printk("kernel addr: %p dma addr: %llx\n", cdev->qmem[thr].kernel_addr, cdev->qmem[thr].dma_addr);
+	}
+
+	return 0;
+
+fail_alloc_dma_addr:
+	free_qmem(cdev);
+out:
+	return rc;
+}
+
 static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 {
 	int rc = 0;
@@ -243,11 +286,14 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 		goto fail_set_dma_mask;
 	}
 
+	if (alloc_qmem(cdev))
+		goto fail_set_dma_mask;
+
 	tasklet_init(&cdev->tasklet, shn_do_tasklet, (unsigned long)cdev);
 	rc = request_irq(dev->irq, shn_cdev_irq, IRQF_SHARED, cdev->name, (void *)cdev);
 	if (rc) {
 		printk("request irq error\n");
-		goto fail_set_dma_mask;
+		goto fail_req_irq;
 	}
 	printk("IRQ No: %d\n", dev->irq);
 
@@ -268,6 +314,8 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 
 fail_reg_shn:
 	free_irq(dev->irq, cdev);
+fail_req_irq:
+	free_qmem(cdev);
 fail_set_dma_mask:
 	iounmap(cdev->mmio);
 fail_map:
@@ -290,6 +338,7 @@ static void shn_cdev_remove(struct pci_dev *dev)
 
 	unregister_shn_cdev(cdev);
 	free_irq(dev->irq, cdev);
+	free_qmem(cdev);
 	iounmap(cdev->mmio);
 	pci_release_selected_regions(dev, cdev->bar_mark);
 	pci_disable_device(dev);

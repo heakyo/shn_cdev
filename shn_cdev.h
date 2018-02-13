@@ -37,6 +37,13 @@
 	#define DMA_ADDR_BITS 	32
 #endif
 
+#define QUEUE_MEM_SIZE (PAGE_SIZE * 2)
+
+struct shn_qmem {
+	void *kernel_addr;
+	dma_addr_t dma_addr;
+};
+
 /* struct */
 struct shn_cdev {
 	struct cdev cdev;
@@ -56,6 +63,8 @@ struct shn_cdev {
 	int hw_nlun;
 	int hw_threads;
 	int hw_luns;
+
+	struct shn_qmem *qmem; 			// contain cmdq and cmpq memory
 
 	resource_size_t bar_host_phymem_addr;
 	resource_size_t bar_host_phymem_len;
