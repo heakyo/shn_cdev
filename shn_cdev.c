@@ -249,7 +249,7 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 		printk("request irq error\n");
 		goto fail_set_dma_mask;
 	}
-	printk("irq: %d\n", dev->irq);
+	printk("IRQ No: %d\n", dev->irq);
 
 	/* register shn cdev */
 	rc = register_shn_cdev(cdev);
@@ -258,7 +258,12 @@ static int shn_cdev_probe(struct pci_dev *dev, const struct pci_device_id *id)
 		goto fail_reg_shn;
 	}
 
-	printk("probe success\n");
+	snprintf(cdev->domain_info, sizeof(cdev->domain_info), "%04x:%02x:%02x.%x",
+		pci_domain_nr(dev->bus), dev->bus->number, PCI_SLOT(dev->devfn), PCI_FUNC(dev->devfn));
+	cdev->subsystem_id = (dev->subsystem_vendor << 16) | (dev->subsystem_device);
+
+	printk("subsystem id = %08X\n", cdev->subsystem_id);
+	printk("%s success\n", __func__);
 	return 0;
 
 fail_reg_shn:

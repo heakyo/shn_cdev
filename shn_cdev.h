@@ -48,6 +48,9 @@ struct shn_cdev {
 	char name[32];
 	int bar_mark;
 
+	char domain_info[32];
+	unsigned int subsystem_id;
+
 	int hw_nchannel;
 	int hw_nthread;
 	int hw_nlun;
