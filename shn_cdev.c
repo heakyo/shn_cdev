@@ -59,9 +59,9 @@ void shn_do_tasklet(unsigned long data)
 
 static irqreturn_t shn_cdev_irq(int irq, void *id)
 {
-	//struct shn_cdev *cdev = (struct shn_cdev *)id;
+	struct shn_cdev *cdev = (struct shn_cdev *)id;
 
-	//tasklet_schedule(&cdev->tasklet);
+	tasklet_schedule(&cdev->tasklet);
 
 	return IRQ_HANDLED;
 }
