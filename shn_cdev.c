@@ -54,7 +54,7 @@ static const struct file_operations shn_cdev_fops = {
 
 void shn_do_tasklet(unsigned long data)
 {
-	printk("%s\n", __func__);
+	//printk("%s\n", __func__);
 }
 
 static irqreturn_t shn_cdev_irq(int irq, void *id)
@@ -182,7 +182,7 @@ static int alloc_qmem(struct shn_cdev *cdev)
 	int thr = 0;
 	int rc = 0;
 
-	cdev->qmem = (struct shn_qmem *)kzalloc(sizeof(cdev->qmem), GFP_KERNEL);
+	cdev->qmem = (struct shn_qmem *)kzalloc(sizeof(*cdev->qmem) * cdev->hw_threads, GFP_KERNEL);
 	if (NULL == cdev->qmem) {
 		printk("alloc queue memory failed\n");
 		rc = -ENOMEM;
@@ -196,7 +196,7 @@ static int alloc_qmem(struct shn_cdev *cdev)
 			rc = -ENOMEM;
 			goto fail_alloc_dma_addr;
 		}
-		printk("kernel addr: %p dma addr: %llx\n", cdev->qmem[thr].kernel_addr, cdev->qmem[thr].dma_addr);
+		//printk("kernel addr: %p dma addr: %llx\n", cdev->qmem[thr].kernel_addr, cdev->qmem[thr].dma_addr);
 	}
 
 	return 0;
