@@ -74,12 +74,21 @@ static int shn_ioctl(struct inode *inodep, struct file *filep, unsigned int cmd,
 	return 0;
 }
 
+static loff_t shn_llseek(struct file *filp, loff_t offset, int orig)
+{
+	loff_t ret;
+
+	ret = -EINVAL;
+	return ret;
+}
+
 static const struct file_operations shn_cdev_fops = {
 	.owner = THIS_MODULE,
 	.open = shn_open,
 	.write = shn_write,
 	.read = shn_read,
 	.ioctl = shn_ioctl,
+	.llseek = shn_llseek,
 };
 
 void shn_do_tasklet(unsigned long data)
