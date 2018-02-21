@@ -41,6 +41,36 @@ static ssize_t shn_read(struct file *filp, char __user *buf, size_t count, loff_
 
 static int shn_ioctl(struct inode *inodep, struct file *filep, unsigned int cmd, unsigned long arg)
 {
+	struct shn_cdev *cdev = filep->private_data;
+	struct shn_ioctl ioctl_data;
+
+	if (SHNCDEV_IOC_MAGIC != _IOC_TYPE(cmd) ) {
+		pr_err("[%s] command type %c error\n", __func__, _IOC_TYPE(cmd));
+		return -ENOTTY;
+	}
+
+	if (copy_from_user(&ioctl_data, (struct shn_ioctl __user *)arg, sizeof(ioctl_data)))
+		return -EFAULT;
+
+	switch (cmd) {
+	case SHNCDEV_IOC_GB:
+		if (ioctl_data.bar == 0) {
+			ioctl_data.size = cdev->bar_host_phymem_len;
+		} else if (ioctl_data.bar == 1) {
+			/* TODO */
+		} else {
+			return -EINVAL;
+		}
+		break;
+	default:
+		printk("Unkonwn command\n");
+		return -EINVAL;
+
+	}
+
+	if(copy_to_user((struct shn_ioctl __user *)arg, &ioctl_data, sizeof(ioctl_data)))
+		return -EFAULT;
+
 	return 0;
 }
 

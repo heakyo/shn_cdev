@@ -39,6 +39,18 @@
 
 #define QUEUE_MEM_SIZE (PAGE_SIZE * 2)
 
+// ioctl cmd
+#define SHNCDEV_IOC_MAGIC 'S'
+
+#define SHNCDEV_IOC_GB 	_IO(SHNCDEV_IOC_MAGIC, 8) // get bar len
+
+struct shn_ioctl {
+	union {
+		int size;
+		int bar;
+	};
+};
+
 struct shn_qmem {
 	void *kernel_addr;
 	dma_addr_t dma_addr;
