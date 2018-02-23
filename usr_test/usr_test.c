@@ -24,7 +24,7 @@
 #include<errno.h>
 
 #define FPATH "/dev/shn_cdev"
-#define BUF_LEN 32
+#define BUF_LEN 0x8000
 
 // ioctl cmd
 #define SHNCDEV_IOC_MAGIC 	'S'
@@ -41,7 +41,7 @@ struct shn_ioctl {
 int main(int argc, char *argv[])
 {
 	int fd;
-	char *rd_buf[BUF_LEN];
+	char rd_buf[BUF_LEN];
 	struct shn_ioctl ioctl_data;
 
 	ioctl_data.size = 32;
@@ -52,16 +52,21 @@ int main(int argc, char *argv[])
 		return errno;
 	}
 
+#if 0
 	if (ioctl(fd, SHNCDEV_IOC_GB, &ioctl_data) == -1) {
 		perror("ioctl error");
 		return errno;
 	}
 	printf("size: %d\n", ioctl_data.size);
-#if 0
-	if (read(fd, rd_buf, 6) < 0) {
+#endif
+	if(lseek(fd, 0, SEEK_SET) < 0) {
+		perror("seek error");
+	}
+
+	if (read(fd, rd_buf, 8) < 0) {
 		perror("read file error");
 	}
-#endif
+	//printf("rd_buf: %x\n", *(int *)&rd_buf[4]);
 
 	close(fd);
 

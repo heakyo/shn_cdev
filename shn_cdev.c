@@ -17,31 +17,46 @@ static ssize_t shn_write(struct file *filp, const char __user *buf, size_t count
 	return ret;
 }
 
-static ssize_t shn_read(struct file *filp, char __user *buf, size_t count, loff_t *ppos)
+static ssize_t shn_read(struct file *filp, char __user *data, size_t count, loff_t *ppos)
 {
-	int ret = count;
+	struct shn_cdev *cdev = filp->private_data;
+	int ret = 0;
+	unsigned char *buf;
 
-	const char s[10] = "hello\n";
-
-	if (*ppos >= 6)
+	if (count == 0)
 		return 0;
 
-
-	if (copy_to_user(buf, s, 6)) {
-		ret = -EFAULT;
-	} else {
-		*ppos += 6;
-		ret = count;
-
-		//printk("read %ld bytes\n", count);
+	if ((count % 4 != 0) || (*ppos % 4 != 0)) {
+		pr_err("[%s] position %lld and count %ld must be aligned with 4\n", __func__, *ppos, count);
+		return -EINVAL;
 	}
 
+	if (*ppos + count > cdev->bar_host_phymem_len) {
+		pr_err("[%s] position %lld and count %ld overflow device address range\n", __func__, *ppos, count);
+		return -EINVAL;
+	}
+
+	buf = (unsigned char *)kmalloc(count, GFP_KERNEL);
+	if (NULL == buf) {
+		pr_err("[%s] alloc memory failed\n", __func__);
+		return -ENOMEM;
+	}
+	memcpy(buf, (unsigned char *)cdev->mmio + *ppos, count);
+
+	if (copy_to_user(data, buf, count)) {
+		ret = -EFAULT;
+	} else {
+		*ppos += count;
+		ret = count;
+	}
+
+	kfree(buf);
 	return ret;
 }
 
-static int shn_ioctl(struct inode *inodep, struct file *filep, unsigned int cmd, unsigned long arg)
+static int shn_ioctl(struct inode *inodep, struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	struct shn_cdev *cdev = filep->private_data;
+	struct shn_cdev *cdev = filp->private_data;
 	struct shn_ioctl ioctl_data;
 
 	if (SHNCDEV_IOC_MAGIC != _IOC_TYPE(cmd) ) {
@@ -74,11 +89,30 @@ static int shn_ioctl(struct inode *inodep, struct file *filep, unsigned int cmd,
 	return 0;
 }
 
-static loff_t shn_llseek(struct file *filp, loff_t offset, int orig)
+static loff_t shn_llseek(struct file *filp, loff_t offset, int whence)
 {
-	loff_t ret;
+	struct shn_cdev *cdev = filp->private_data;
+	loff_t ret = 0;
 
-	ret = -EINVAL;
+	switch (whence) {
+	case SEEK_SET:
+		ret = offset;
+		break;
+	case SEEK_CUR:
+		ret = filp->f_pos + offset;
+		break;
+	case SEEK_END:
+		ret =  cdev->bar_host_phymem_len + offset;
+		break;
+	default:
+		ret = -EINVAL;
+	}
+
+	if (ret < 0 || ret >= cdev->bar_host_phymem_len)
+		return -EINVAL;
+
+	filp->f_pos = ret;
+
 	return ret;
 }
 
