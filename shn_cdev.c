@@ -269,6 +269,8 @@ static int alloc_qmem(struct shn_cdev *cdev)
 			rc = -ENOMEM;
 			goto fail_alloc_dma_addr;
 		}
+
+		memset(cdev->qmem[thr].kernel_addr, 0x0, QUEUE_MEM_SIZE);
 		//printk("kernel addr: %p dma addr: %llx\n", cdev->qmem[thr].kernel_addr, cdev->qmem[thr].dma_addr);
 	}
 
