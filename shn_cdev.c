@@ -57,14 +57,14 @@ static ssize_t shn_read(struct file *filp, char __user *data, size_t count, loff
 static int shn_ioctl(struct inode *inodep, struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	struct shn_cdev *cdev = filp->private_data;
-	struct shn_ioctl ioctl_data;
+	struct shn_ioctl_data ioctl_data;
 
 	if (SHNCDEV_IOC_MAGIC != _IOC_TYPE(cmd) ) {
 		pr_err("[%s] command type %c error\n", __func__, _IOC_TYPE(cmd));
 		return -ENOTTY;
 	}
 
-	if (copy_from_user(&ioctl_data, (struct shn_ioctl __user *)arg, sizeof(ioctl_data)))
+	if (copy_from_user(&ioctl_data, (struct shn_ioctl_data __user *)arg, sizeof(ioctl_data)))
 		return -EFAULT;
 
 	switch (cmd) {
@@ -77,13 +77,17 @@ static int shn_ioctl(struct inode *inodep, struct file *filp, unsigned int cmd, 
 			return -EINVAL;
 		}
 		break;
+	case SHNCDEV_IOC_GF:
+		//printk("usr_addr: %p size: %d\n", ioctl_data.usr_addr, ioctl_data.size);
+		memcpy(ioctl_data.usr_addr, cdev->qmem, ioctl_data.size);
+		break;
 	default:
 		printk("Unkonwn command\n");
 		return -EINVAL;
 
 	}
 
-	if(copy_to_user((struct shn_ioctl __user *)arg, &ioctl_data, sizeof(ioctl_data)))
+	if(copy_to_user((struct shn_ioctl_data __user *)arg, &ioctl_data, sizeof(ioctl_data)))
 		return -EFAULT;
 
 	return 0;

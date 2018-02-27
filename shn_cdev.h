@@ -42,18 +42,21 @@
 // ioctl cmd
 #define SHNCDEV_IOC_MAGIC 'S'
 
+#define SHNCDEV_IOC_GF 	_IO(SHNCDEV_IOC_MAGIC, 5) // get fixed lun memory
 #define SHNCDEV_IOC_GB 	_IO(SHNCDEV_IOC_MAGIC, 8) // get bar len
-
-struct shn_ioctl {
-	union {
-		int size;
-		int bar;
-	};
-};
 
 struct shn_qmem {
 	void *kernel_addr;
 	dma_addr_t dma_addr;
+};
+
+struct shn_ioctl_data {
+	union {
+		int size;
+		int bar;
+	};
+	struct shn_qmem qmem;
+	void *usr_addr;
 };
 
 /* struct */
