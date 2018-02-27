@@ -44,6 +44,8 @@
 
 #define SHNCDEV_IOC_GF 	_IO(SHNCDEV_IOC_MAGIC, 5) // get fixed lun memory
 #define SHNCDEV_IOC_GB 	_IO(SHNCDEV_IOC_MAGIC, 8) // get bar len
+#define SHNCDEV_IOC_GD 	_IO(SHNCDEV_IOC_MAGIC, 9) // get device domains info
+#define SHNCDEV_IOC_GS 	_IO(SHNCDEV_IOC_MAGIC, 10) // get device subsystem vendor and device info
 
 struct shn_qmem {
 	void *kernel_addr;

@@ -81,6 +81,12 @@ static int shn_ioctl(struct inode *inodep, struct file *filp, unsigned int cmd, 
 		//printk("usr_addr: %p size: %d\n", ioctl_data.usr_addr, ioctl_data.size);
 		memcpy(ioctl_data.usr_addr, cdev->qmem, ioctl_data.size);
 		break;
+	case SHNCDEV_IOC_GD:
+		memcpy(ioctl_data.usr_addr, cdev->domain_info, ioctl_data.size);
+		break;
+	case SHNCDEV_IOC_GS:
+		memcpy(ioctl_data.usr_addr, &cdev->subsystem_id, ioctl_data.size);
+		break;
 	default:
 		printk("Unkonwn command\n");
 		return -EINVAL;
