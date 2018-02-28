@@ -10,9 +10,30 @@ static int shn_open(struct inode *inodep, struct file *filp)
 	return 0;
 }
 
-static ssize_t shn_write(struct file *filp, const char __user *buf, size_t count, loff_t *ppos)
+static ssize_t shn_write(struct file *filp, const char __user *data, size_t count, loff_t *ppos)
 {
+	struct shn_cdev *cdev = filp->private_data;
 	int ret = count;
+
+	if (count == 0)
+		return 0;
+
+	if ((count % 4 != 0) || (*ppos % 4 != 0)) {
+		pr_err("[%s] position %lld and count %ld must be aligned with 4\n", __func__, *ppos, count);
+		return -EINVAL;
+	}
+
+	if (*ppos + count > cdev->bar_host_phymem_len) {
+		pr_err("[%s] position %lld and count %ld overflow device address range\n", __func__, *ppos, count);
+		return -EINVAL;
+	}
+
+	if (copy_from_user((unsigned char *)cdev->mmio + *ppos, data, count)) {
+		ret = -EFAULT;
+	} else {
+		*ppos += count;
+		ret = count;
+	}
 
 	return ret;
 }
