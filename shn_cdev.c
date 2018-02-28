@@ -103,6 +103,10 @@ static int shn_ioctl(struct inode *inodep, struct file *filp, unsigned int cmd, 
 		//printk("size: %d kernel_addr: %p user_addr: %p\n", ioctl_data.size, ioctl_data.qmem.kernel_addr, ioctl_data.usr_addr);
 		memcpy(ioctl_data.qmem.kernel_addr, ioctl_data.usr_addr, ioctl_data.size);
 		break;
+	case SHNCDEV_IOC_RM:
+		//printk("size: %d kernel_addr: %p user_addr: %p\n", ioctl_data.size, ioctl_data.qmem.kernel_addr, ioctl_data.usr_addr);
+		memcpy(ioctl_data.usr_addr, ioctl_data.qmem.kernel_addr, ioctl_data.size);
+		break;
 	default:
 		printk("Unkonwn command\n");
 		return -EINVAL;
