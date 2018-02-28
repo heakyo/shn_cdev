@@ -42,7 +42,6 @@ static ssize_t shn_read(struct file *filp, char __user *data, size_t count, loff
 {
 	struct shn_cdev *cdev = filp->private_data;
 	int ret = 0;
-	unsigned char *buf;
 
 	if (count == 0)
 		return 0;
@@ -57,21 +56,13 @@ static ssize_t shn_read(struct file *filp, char __user *data, size_t count, loff
 		return -EINVAL;
 	}
 
-	buf = (unsigned char *)kmalloc(count, GFP_KERNEL);
-	if (NULL == buf) {
-		pr_err("[%s] alloc memory failed\n", __func__);
-		return -ENOMEM;
-	}
-	memcpy(buf, (unsigned char *)cdev->mmio + *ppos, count);
-
-	if (copy_to_user(data, buf, count)) {
+	if (copy_to_user(data, (unsigned char *)cdev->mmio + *ppos, count)) {
 		ret = -EFAULT;
 	} else {
 		*ppos += count;
 		ret = count;
 	}
 
-	kfree(buf);
 	return ret;
 }
 
