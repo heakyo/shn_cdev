@@ -17,6 +17,7 @@
 
 #define SHNDEV_NAME "shn_cdev"
 
+#define DW_SIZE 4
 #define MAX_LUNS 512
 #define MAX_LUNS_NLONG ((MAX_LUNS + 8 * sizeof(unsigned long) - 1) / (8 * sizeof(unsigned long)))
 #define MAX_LUNS_NBYTE (MAX_LUNS_NLONG * sizeof(unsigned long))

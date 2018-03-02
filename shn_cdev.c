@@ -10,15 +10,22 @@ static int shn_open(struct inode *inodep, struct file *filp)
 	return 0;
 }
 
+/*
+ * It's better to operate BAR in DW not in memory copy
+ * Because some registers will take effect one by one
+ */
 static ssize_t shn_write(struct file *filp, const char __user *data, size_t count, loff_t *ppos)
 {
 	struct shn_cdev *cdev = filp->private_data;
 	int ret = count;
+	int i = 0;
+	unsigned int *buf = NULL;
+	const int dw_cnt = count / DW_SIZE;
 
 	if (count == 0)
 		return 0;
 
-	if ((count % 4 != 0) || (*ppos % 4 != 0)) {
+	if ((count % DW_SIZE != 0) || (*ppos % DW_SIZE != 0)) {
 		pr_err("[%s] position %lld and count %ld must be aligned with 4\n", __func__, *ppos, count);
 		return -EINVAL;
 	}
@@ -28,13 +35,22 @@ static ssize_t shn_write(struct file *filp, const char __user *data, size_t coun
 		return -EINVAL;
 	}
 
-	if (copy_from_user((unsigned char *)cdev->mmio + *ppos, data, count)) {
+	buf = kmalloc(count, GFP_KERNEL);
+	if (NULL == buf) {
+		pr_err("[%s] alloc memory error\n", __func__);
+		return -ENOMEM;
+	}
+
+	if (copy_from_user(buf, data, count)) {
 		ret = -EFAULT;
 	} else {
+		for (i = 0; i < dw_cnt; i++)
+			writel(buf[i], cdev->mmio + *ppos / DW_SIZE + i);
 		*ppos += count;
 		ret = count;
 	}
 
+	kfree(buf);
 	return ret;
 }
 
