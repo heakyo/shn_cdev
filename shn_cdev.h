@@ -15,7 +15,7 @@
 #define PCI_DEVICE_ID_SHANNON_25A5 0x25A5
 #define PCI_DEVICE_ID_SHANNON_05A5 0x05A5
 
-#define SHNDEV_NAME "shn_cdev"
+#define SHNDEV_NAME "shannon_cdev"
 
 #define DW_SIZE 4
 #define MAX_LUNS 512
