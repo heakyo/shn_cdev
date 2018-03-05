@@ -124,6 +124,11 @@ static int shn_ioctl(struct inode *inodep, struct file *filp, unsigned int cmd, 
 		memcpy(ioctl_data.usr_addr, ioctl_data.qmem.kernel_addr, ioctl_data.size);
 		break;
 	case SHNCDEV_IOC_GM:
+		if (ioctl_data.size == 0) {
+			printk("GM: the size of get memory is 0\n");
+			return -EFAULT;
+		}
+
 		ioctl_data.qmem.kernel_addr = dma_alloc_coherent(&cdev->pdev->dev, ioctl_data.size, &ioctl_data.qmem.dma_addr, GFP_KERNEL);
 		if (NULL == ioctl_data.qmem.kernel_addr) {
 			printk("dma alloc coherent failed\n");
@@ -131,6 +136,15 @@ static int shn_ioctl(struct inode *inodep, struct file *filp, unsigned int cmd, 
 		}
 		memset(ioctl_data.qmem.kernel_addr, 0x0, ioctl_data.size);
 		//printk("kernel addr: %p dma addr: %llx\n", ioctl_data.qmem.kernel_addr, ioctl_data.qmem.dma_addr);
+		break;
+	case SHNCDEV_IOC_FM:
+		if (ioctl_data.size == 0) {
+			printk("FM: the size of free memory is 0\n");
+			return -EFAULT;
+		}
+
+		//printk("size: %d kernel_addr: %p user_addr: %p\n", ioctl_data.size, ioctl_data.qmem.kernel_addr, ioctl_data.usr_addr);
+		dma_free_coherent(&cdev->pdev->dev, ioctl_data.size, ioctl_data.qmem.kernel_addr, ioctl_data.qmem.dma_addr);
 		break;
 	default:
 		printk("Unkonwn command\n");

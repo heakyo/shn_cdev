@@ -44,6 +44,7 @@
 #define SHNCDEV_IOC_MAGIC 'S'
 
 #define SHNCDEV_IOC_GM 	_IO(SHNCDEV_IOC_MAGIC, 1) // get mem
+#define SHNCDEV_IOC_FM 	_IO(SHNCDEV_IOC_MAGIC, 2) // free mem
 #define SHNCDEV_IOC_RM 	_IO(SHNCDEV_IOC_MAGIC, 3) // read mem
 #define SHNCDEV_IOC_WM 	_IO(SHNCDEV_IOC_MAGIC, 4) // write mem
 #define SHNCDEV_IOC_GF 	_IO(SHNCDEV_IOC_MAGIC, 5) // get fixed lun memory
