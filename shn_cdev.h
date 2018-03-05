@@ -43,7 +43,8 @@
 // ioctl cmd
 #define SHNCDEV_IOC_MAGIC 'S'
 
-#define SHNCDEV_IOC_RM 	_IO(SHNCDEV_IOC_MAGIC, 3) // write mem
+#define SHNCDEV_IOC_GM 	_IO(SHNCDEV_IOC_MAGIC, 1) // get mem
+#define SHNCDEV_IOC_RM 	_IO(SHNCDEV_IOC_MAGIC, 3) // read mem
 #define SHNCDEV_IOC_WM 	_IO(SHNCDEV_IOC_MAGIC, 4) // write mem
 #define SHNCDEV_IOC_GF 	_IO(SHNCDEV_IOC_MAGIC, 5) // get fixed lun memory
 #define SHNCDEV_IOC_GB 	_IO(SHNCDEV_IOC_MAGIC, 8) // get bar len
