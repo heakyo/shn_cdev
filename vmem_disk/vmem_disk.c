@@ -30,7 +30,7 @@ static int hardsect_size = 512;
 module_param(hardsect_size, int, 0);
 static int nsectors = 1024;     /* How big the drive is */
 module_param(nsectors, int, 0);
-static int ndevices = 4;
+static int ndevices = 1;
 module_param(ndevices, int, 0);
 
 /*
@@ -58,22 +58,15 @@ module_param(request_mode, int, 0);
 #define KERNEL_SECTOR_SIZE      512
 
 	/*
-	 * After this much idle time, the driver will simulate a media change.
-	 */
-#define INVALIDATE_DELAY        30*HZ
-
-	/*
 	 * The internal representation of our device.
 	 */
 struct vmem_disk_dev {
 	int size;                       /* Device size in sectors */
 	u8 *data;                       /* The data array */
 	short users;                    /* How many users */
-	short media_change;             /* Flag a media change? */
 	spinlock_t lock;                /* For mutual exclusion */
 	struct request_queue *queue;    /* The device request queue */
 	struct gendisk *gd;             /* The gendisk structure */
-	struct timer_list timer;        /* For simulated media changes */
 	};
 
 static struct vmem_disk_dev *Devices = NULL;
@@ -119,7 +112,6 @@ static void vmem_disk_request(struct request_queue *q)
 		blk_end_request_all(req, 1);
 	}
 }
-
 
 /*
  * Transfer a single BIO.
@@ -210,7 +202,6 @@ static int vmem_disk_open(struct block_device *bdev, fmode_t mode)
 {
 	struct vmem_disk_dev *dev = bdev->bd_disk->private_data;
 
-	del_timer_sync(&dev->timer);
 	spin_lock(&dev->lock);
 	dev->users++;
 	spin_unlock(&dev->lock);
@@ -225,54 +216,9 @@ static int vmem_disk_release(struct gendisk *disk, fmode_t mode)
 	spin_lock(&dev->lock);
 	dev->users--;
 
-	if (!dev->users) {
-		dev->timer.expires = jiffies + INVALIDATE_DELAY;
-		add_timer(&dev->timer);
-	}
 	spin_unlock(&dev->lock);
 
 	return 0;
-}
-
-/*
- * Look for a (simulated) media change.
- */
-int vmem_disk_media_changed(struct gendisk *gd)
-{
-	struct vmem_disk_dev *dev = gd->private_data;
-
-	return dev->media_change;
-}
-
-/*
- * Revalidate.  WE DO NOT TAKE THE LOCK HERE, for fear of deadlocking
- * with open.  That needs to be reevaluated.
- */
-int vmem_disk_revalidate(struct gendisk *gd)
-{
-	struct vmem_disk_dev *dev = gd->private_data;
-
-	if (dev->media_change) {
-		dev->media_change = 0;
-		memset (dev->data, 0, dev->size);
-	}
-	return 0;
-}
-
-/*
- * The "invalidate" function runs out of the device timer; it sets
- * a flag to simulate the removal of the media.
- */
-void vmem_disk_invalidate(unsigned long ldev)
-{
-	struct vmem_disk_dev *dev = (struct vmem_disk_dev *) ldev;
-
-	spin_lock(&dev->lock);
-	if (dev->users || !dev->data)
-		printk (KERN_WARNING "vmem_disk: timer sanity check failed\n");
-	else
-		dev->media_change = 1;
-	spin_unlock(&dev->lock);
 }
 
 /*
@@ -300,8 +246,6 @@ static struct block_device_operations vmem_disk_ops = {
 	.owner           = THIS_MODULE,
 	.open            = vmem_disk_open,
 	.release         = vmem_disk_release,
-	.media_changed   = vmem_disk_media_changed,
-	.revalidate_disk = vmem_disk_revalidate,
 	.getgeo          = vmem_disk_getgeo,
 };
 
@@ -322,13 +266,6 @@ static void setup_device(struct vmem_disk_dev *dev, int which)
 		return;
 	}
 	spin_lock_init(&dev->lock);
-
-	/*
-	 * The timer which "invalidates" the device.
-	 */
-	init_timer(&dev->timer);
-	dev->timer.data = (unsigned long) dev;
-	dev->timer.function = vmem_disk_invalidate;
 
 	/*
 	 * The I/O queue, depending on whether we are using our own
@@ -398,7 +335,7 @@ static int __init vmem_disk_init(void)
 	/*
 	 * Allocate the device array, and initialize each one.
 	 */
-	Devices = kmalloc(ndevices*sizeof (struct vmem_disk_dev), GFP_KERNEL);
+	Devices = kmalloc(ndevices * sizeof (struct vmem_disk_dev), GFP_KERNEL);
 	if (Devices == NULL)
 		goto out_unregister;
 	for (i = 0; i < ndevices; i++)
@@ -418,7 +355,6 @@ static void vmem_disk_exit(void)
 	for (i = 0; i < ndevices; i++) {
 		struct vmem_disk_dev *dev = Devices + i;
 
-		del_timer_sync(&dev->timer);
 		if (dev->gd) {
 			del_gendisk(dev->gd);
 			put_disk(dev->gd);
